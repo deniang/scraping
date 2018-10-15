@@ -143,3 +143,182 @@ function search_blibli($keyword="",$price=0,$type=0) {
 
 
 }
+
+function jsonp_decode($jsonp, $assoc = false) {
+    if($jsonp[0] !== '[' && $jsonp[0] !== '{') {
+        $jsonp = substr($jsonp, strpos($jsonp, '('));
+    }
+    return json_decode(trim($jsonp,'();'), $assoc);
+}
+
+function call($url, $method="GET", $payload=null)
+{
+
+    $conn = curl_init();
+
+    $headers = array('Content-Type: application/json');
+
+    curl_setopt($conn, CURLOPT_URL, $url);
+    curl_setopt($conn, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($conn, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+    curl_setopt($conn, CURLOPT_FORBID_REUSE, 0);
+    curl_setopt($conn, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($conn,CURLOPT_USERAGENT,'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.13) Gecko/20080311 Firefox/2.0.0.13');
+    if (strlen($payload) > 1) {
+        curl_setopt($conn, CURLOPT_POSTFIELDS, $payload);
+    }
+
+    $response = curl_exec($conn);
+
+    return $response;
+}
+
+function search_tokopedia($keyword="",$price=0,$type=0) {
+    //$type = 0 range, 1 below, 2 ctype_upper
+
+    $url = "https://ace.tokopedia.com/search/product/v3?&device=desktop&catalog_rows=5&source=search&ob=23&st=product&rows=60&q=".urlencode($keyword);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $yeye = json_decode($response);
+
+    if ($price <> 0) {
+        $min = $price * 0.8;
+        $max = $price * 1.2;
+    }
+
+    $ada = 0;
+    $data = array();
+    if (isset($yeye->data->products)) {
+        foreach ($yeye->data->products as $dat) {
+            if (!$ada) {
+                if ($type == 0) {
+                    if ($dat->price_int >= $min && $dat->price_int <= $max) {
+                        $ada = 1;
+                        $data = array("name"=>$dat->name,"img"=>$dat->image_url,"url"=>$dat->url,"price"=>$dat->price_int);
+                    }
+                }elseif ($type == 1) {
+                    if ($dat->price_int < $price) {
+                        $ada = 1;
+                        $data = array("name"=>$dat->name,"img"=>$dat->image_url,"url"=>$dat->url,"price"=>$dat->price_int);
+                    }
+                }elseif ($type == 2) {
+                    if ($dat->price_int > $price) {
+                        $ada = 1;
+                        $data = array("name"=>$dat->name,"img"=>$dat->image_url,"url"=>$dat->url,"price"=>$dat->price_int);
+                    }
+                }
+
+            }
+
+        }
+
+    }
+
+    return $data;
+}
+
+function search_bukalapak($keyword="",$price=0,$type=0) {
+    $url = "https://www.bukalapak.com/omniscience/v2?user=32247da095a528bb614c2ce7dda18228&word=".urlencode($keyword)."&key=efa871c40072792cedad312272ca2daa";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $yeye = json_decode($response);
+
+    if ($price <> 0) {
+        $min = $price * 0.8;
+        $max = $price * 1.2;
+    }
+
+    $ada = 0;
+    $data = array();
+    if (isset($yeye->product)) {
+        foreach ($yeye->product as $dat) {
+            if (!$ada) {
+                if ($type == 0) {
+                    if ($dat->price >= $min && $dat->price <= $max) {
+                        $ada = 1;
+                        $data = array("name"=>$dat->name,"img"=>$dat->img,"url"=>$dat->url,"price"=>$dat->price);
+                    }
+                }elseif ($type == 1) {
+                    if ($dat->price < $price) {
+                        $ada = 1;
+                        $data = array("name"=>$dat->name,"img"=>$dat->img,"url"=>$dat->url,"price"=>$dat->price);
+                    }
+                }elseif ($type == 2) {
+                    if ($dat->price > $price) {
+                        $ada = 1;
+                        $data = array("name"=>$dat->name,"img"=>$dat->img,"url"=>$dat->url,"price"=>$dat->price);
+                    }
+                }
+
+            }
+
+        }
+
+    }
+
+    return $data;
+}
+
+function search_lazada($keyword="",$price=0,$type=0) {
+    $url = "https://www.lazada.co.id/catalog/?q=".urlencode($keyword)."&_keyori=ss&from=input&spm=a2o4j.home.search.go.57994ceeU2IlKI";
+    $data = call($url);
+
+    preg_match_all('#<script>(.*?)</script>#i', $data, $scripts);
+
+    //print_r($scripts);
+    $hasil = "";
+    foreach ($scripts as $data) {
+        //    print_r($data[0]);
+        if (isset($data[0]) && strpos($data[0],"window.pageData=") > 0) {
+            $hasil = $data[0];
+        }
+    }
+
+    if ($price <> 0) {
+        $min = $price * 0.8;
+        $max = $price * 1.2;
+    }
+
+    $ada = 0;
+    $data = array();
+
+    if (strlen($hasil) > 3) {
+        $hasil = str_replace("<script>window.pageData=","",$hasil);
+        $hasil = str_replace("</script>","",$hasil);
+
+        //print_r($hasil);
+        $rere = json_decode($hasil);
+        if (isset($rere->mods->listItems)) {
+            foreach ($rere->mods->listItems as $datas) {
+                if (!$ada) {
+                    if ($type == 0) {
+                        if ($datas->price >= $min && $datas->price <= $max) {
+                            $ada = 1;
+                            $data = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->productUrl,"price"=>$datas->price);
+                        }
+                    }elseif ($type == 1) {
+                        if ($datas->price < $price) {
+                            $ada = 1;
+                            $data = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->productUrl,"price"=>$datas->price);
+                        }
+                    }elseif ($type == 2) {
+                        if ($datas->price > $price) {
+                            $ada = 1;
+                            $data = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->productUrl,"price"=>$datas->price);
+                        }
+                    }
+
+                }
+
+            }
+        }
+    }
+
+    return $data;
+}
