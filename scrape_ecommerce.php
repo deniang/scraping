@@ -71,3 +71,73 @@ function search_jdid($keyword="",$price=0,$type=0) {
 
     return $data;
 }
+
+function search_blibli($keyword="",$price=0,$type=0) {
+    $keyword = str_replace(" ","-",$keyword);
+
+    $url = "https://www.blibli.com/".$keyword."/53400?listField=Search+Results+Page&originalSearchUrl=".$keyword."&searchSEOCustomUrl=".$keyword."&searchTermSeoContent=".$keyword."&searchDefaultSorting=SEARCH_RELEVANCE&searchCustomRootUrl=%2Fjual&pvSwitch=true";
+    $url = "https://www.blibli.com/jual/".$keyword;
+    $data = call($url);
+
+    preg_match_all('/((<[\\s\\/]*script\\b[^>]*>)([^>]*)(<\\/script>))/i', $data, $scripts);
+
+    $hasil = "";
+    foreach ($scripts as $data) {
+
+        if (isset($data[8]) && strpos($data[8],"itemListElement") > 0) {
+            $hasil = $data[8];
+        }
+    }
+
+    //print_r(json_decode($hasil));
+    $rere = json_decode($hasil);
+
+    if ($price <> 0) {
+        $min = $price * 0.8;
+        $max = $price * 1.2;
+    }
+
+    $ada = 0;
+    $data = array();
+    $data1 = array();
+    $kecil = 1000000;
+
+    if (isset($rere->itemListElement)) {
+        foreach ($rere->itemListElement as $datas) {
+            $harga = $datas->offers->price;
+
+            if (!$ada) {
+                if ($type == 0) {
+                    if ($datas->offers->price >= $min && $datas->offers->price <= $max) {
+                        $ada = 1;
+                        $data = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->url,"price"=>$datas->offers->price);
+                    }
+                }elseif ($type == 1) {
+                    if ($datas->offers->price < $price) {
+                        $ada = 1;
+                        $data = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->url,"price"=>$datas->offers->price);
+                    }
+                }elseif ($type == 2) {
+                    if ($datas->offers->price > $price) {
+                        $ada = 1;
+                        $data = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->url,"price"=>$datas->offers->price);
+                    }
+                }
+
+                if ($harga < $kecil) {
+                    $data1 = array("name"=>$datas->name,"img"=>$datas->image,"url"=>$datas->url,"price"=>$datas->offers->price);
+                }
+
+            }
+
+        }
+    }
+
+    if (count($data) > 0) {
+        return $data;
+    }else {
+        return $data1;
+    }
+
+
+}
