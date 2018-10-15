@@ -1,3 +1,5 @@
+<?php
+
 function search_jdid($keyword="",$price=0,$type=0) {
     require_once('simple_html_dom.php');
 
