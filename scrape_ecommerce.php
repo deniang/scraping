@@ -1,4 +1,32 @@
 <?php
+$keyword = "Nokia 105 Dual Sim";
+$price = 255000;
+$result = proses_keyword();
+print_r($result);
+
+function proses_keyword($keyword="",$price=0) {
+    //$type = 0 range, 1 below, 2 ctype_upper
+    echo "Proses Toped ".$keyword." ".$price.PHP_EOL;
+    $toped = search_tokopedia($keyword,$price,0);
+    //print_r($toped);
+    echo "Proses bukalapak ".$keyword." ".$price.PHP_EOL;
+    $bulak = search_bukalapak($keyword,$price,0);
+    //print_r($bulak);
+    echo "Proses lazada ".$keyword." ".$price.PHP_EOL;
+    $lazada = search_lazada_new($keyword,$price,0);
+    //print_r($lazada);
+    echo "Proses blibli ".$keyword." ".$price.PHP_EOL;
+    $blibli = search_blibli($keyword,$price,0);
+    //print_r($blibli);
+    echo "Proses jdid ".$keyword." ".$price.PHP_EOL;
+    $jdid = search_jdid($keyword,$price,0);
+    //print_r($jdid);
+
+    $data = array("tokopedia"=>$toped,"bukalapak"=>$bulak,"lazada"=>$lazada,"blibli"=>$blibli,"jdid"=>$jdid);
+
+    return json_encode($data);
+
+}
 
 function search_jdid($keyword="",$price=0,$type=0) {
     require_once('simple_html_dom.php');
